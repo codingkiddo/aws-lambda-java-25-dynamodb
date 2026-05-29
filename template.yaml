@@ -1,0 +1,66 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: AWS Lambda Java 25 DynamoDB CRUD API
+
+Globals:
+  Function:
+    Runtime: java25
+    MemorySize: 512
+    Timeout: 15
+    Architectures:
+      - arm64
+
+Resources:
+  CustomerTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: customers-java25
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: customerId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: customerId
+          KeyType: HASH
+
+  CustomerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: aws-lambda-java-25-dynamodb
+      Handler: com.codingkiddo.lambda.CustomerHandler::handleRequest
+      CodeUri: target/aws-lambda-java-25-dynamodb.jar
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref CustomerTable
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref CustomerTable
+      Events:
+        CreateCustomer:
+          Type: Api
+          Properties:
+            Path: /customers
+            Method: POST
+
+        GetCustomer:
+          Type: Api
+          Properties:
+            Path: /customers/{customerId}
+            Method: GET
+
+        UpdateCustomer:
+          Type: Api
+          Properties:
+            Path: /customers/{customerId}
+            Method: PUT
+
+        DeleteCustomer:
+          Type: Api
+          Properties:
+            Path: /customers/{customerId}
+            Method: DELETE
+
+Outputs:
+  ApiUrl:
+    Description: API Gateway endpoint URL
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/"
